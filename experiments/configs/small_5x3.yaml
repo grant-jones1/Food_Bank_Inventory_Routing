@@ -1,0 +1,64 @@
+# Small instance: 5 agencies, 3 items.
+# Consumed by experiments/run_experiment.py (to be written) and by
+# foodbank_ir.instance.load_instance once implemented.
+
+name: small_5x3
+seed: 0
+
+instance:
+  num_agencies: 5
+  num_items: 3
+  area_size: 100.0            # agencies/depot placed uniformly in a 100x100 square
+  demand_family: poisson      # one of: poisson, normal, negative_binomial
+  inspection_cost: 2.0
+  vehicle_capacity: 500.0
+  num_vehicles: 1
+  discount_factor: 0.95
+
+  # Optional explicit item definitions; if omitted, generate_random_instance
+  # draws unit_weight / holding_cost / shortage_cost from default ranges.
+  items:
+    - name: canned_vegetables
+      unit_weight: 1.0
+      holding_cost: 0.1
+      shortage_cost: 2.0
+    - name: rice
+      unit_weight: 2.0
+      holding_cost: 0.05
+      shortage_cost: 3.0
+    - name: fresh_produce
+      unit_weight: 1.5
+      holding_cost: 0.5      # perishable: high holding cost
+      shortage_cost: 1.5
+
+simulation:
+  horizon: 50                 # truncation of the infinite-horizon problem
+  num_episodes: 100
+  base_seed: 0
+  inspection_requires_visit: true
+
+policies:
+  - type: periodic_inspection
+    inspection_period: 3
+    stagger: true
+  - type: reorder_point
+    uncertainty_threshold: 5.0
+    max_periods_without_inspection: 10
+    inspect_on_visit: true
+  - type: rollout
+    base_policy: reorder_point
+    horizon: 5
+    num_samples: 20
+    max_candidates: 50
+
+baseline:
+  full_information:
+    horizon: 50
+    num_samples: 20
+    solver: appsi_highs
+    time_limit_sec: 600
+    mip_gap: 0.01
+
+output:
+  dir: experiments/results/small_5x3
+  plots: [policy_comparison, cost_breakdown, inspection_frequency]
